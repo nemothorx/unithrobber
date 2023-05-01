@@ -242,7 +242,8 @@ do_prop() {
 }
 
 ##################################################### main
-
+# these are not in order of implementation.
+# They may in the future be put into some vague order of logical progression/grouping though
 case $1 in
     cross) # Block slides smoothly across, then smoothly down. Forever
         # across and down in a single character space, forever
@@ -287,12 +288,21 @@ case $1 in
             do_spin
         done
         ;;
-    braillesnake) # (TODO) A "snake" game in a 2x3 braille grid (1 space)
-        # Start with it as a 1dot snake, it finds and eats a prize, becomes 2dot, etc, till 3x2 is full
-        # note: have to plan the whole game
+    braillesnake) # (TODO) A "snake" game in a 2x4 braille grid (1 space)
+        # Start with it as a 1dot snake, it finds and eats a prize, becomes 2dot, etc, till 2x4 is full
+        # note: have to plan the whole game?
         true
         ;;
-    kitt) # (TODO) K.I.T.T scanner. Loops forever
+    gravityspin) # (TODO) Microsoft style: speeds up going down, slows at top
+        # implement with a custom character array of braille and do_spin?
+        true
+        ;;
+    kitt|cylon) # (TODO) K.I.T.T/cylon style scanner. Loops forever
+        # this likely needs a new function
+        # across like marquee, but then back again - adapt do_marquee?
+        # needs to be in red
+        # how "bulb like" can I make it? including light leakage into the neighbouring bulbs? 
+        # KITT original is 7 bulbs I think?
         true
         ;;
     dot) # (TODO) A growing and shrinking solid dot (1space)
