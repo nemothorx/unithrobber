@@ -14,88 +14,62 @@ tstamp=$(sleepenh 0)
 
 delay=0.04  # 0.1 = 10fps. 0.0625=16fps, 0.0416667 = 24fps, 0.02 = 50fps
 
-# ▁   ▂   ▃   ▄   ▅   ▆   ▇   █   ▉   ▊   ▋   ▌   ▍   ▎   ▏
-
 # characters for left/right/up/down slides
-leftblk[1]="█"
-leftblk[2]="▉"
-leftblk[3]="▊"
-leftblk[4]="▋"
-leftblk[5]="▌"
-leftblk[6]="▍"
-leftblk[7]="▎"
-leftblk[8]="▏"
-
-lowblk[1]="█"
-lowblk[2]="▇"
-lowblk[3]="▆"
-lowblk[4]="▅"
-lowblk[5]="▄"
-lowblk[6]="▃"
-lowblk[7]="▂"
-lowblk[8]="▁"
+declare -a leftblk=( "█" "▉" "▊" "▋" "▌" "▍" "▎" "▏")
+declare -a lowblk=( "█" "▇" "▆" "▅" "▄" "▃" "▂" "▁" )
 
 # characters for a spinner around a central spot (c for corners)
-# cspin[1]="▏"   # LEFT ONE EIGHTH BLOCK
-cspin[2]="🭛"   # UPPER LEFT BLOCK DIAGONAL LOWER LEFT TO UPPER CENTRE
-cspin[3]="🭙"   # UPPER LEFT BLOCK DIAGONAL LOWER MIDDLE LEFT TO UPPER CENTRE
-cspin[4]="🭗"   # UPPER LEFT BLOCK DIAGONAL UPPER MIDDLE LEFT TO UPPER CENTRE
-#cspin[4]="🭚"   # UPPER LEFT BLOCK DIAGONAL LOWER MIDDLE LEFT TO UPPER RIGHT
-cspin[5]="🭘"   # UPPER LEFT BLOCK DIAGONAL UPPER MIDDLE LEFT TO UPPER RIGHT
-cspin[6]="▔"   # UPPER ONE EIGHTH BLOCK
-cspin[7]="🭣"   # UPPER RIGHT BLOCK DIAGONAL UPPER LEFT TO UPPER MIDDLE RIGHT
-cspin[8]="🭢"   # UPPER RIGHT BLOCK DIAGONAL UPPER CENTRE TO UPPER MIDDLE RIGHT
-#cspin[8]="🭥"   # UPPER RIGHT BLOCK DIAGONAL UPPER LEFT TO LOWER MIDDLE RIGHT
-cspin[9]="🭤"   # UPPER RIGHT BLOCK DIAGONAL UPPER CENTRE TO LOWER MIDDLE RIGHT
-cspin[10]="🭦"   # UPPER RIGHT BLOCK DIAGONAL UPPER CENTRE TO LOWER RIGHT
-cspin[11]="▕"   # RIGHT ONE EIGHTH BLOCK
-cspin[12]="🭋"   # LOWER RIGHT BLOCK DIAGONAL LOWER CENTRE TO UPPER RIGHT
-cspin[13]="🭉"   # LOWER RIGHT BLOCK DIAGONAL LOWER CENTRE TO UPPER MIDDLE RIGHT
-cspin[14]="🭇"   # LOWER RIGHT BLOCK DIAGONAL LOWER CENTRE TO LOWER MIDDLE RIGHT
-#cspin[14]="🭊"   # LOWER RIGHT BLOCK DIAGONAL LOWER LEFT TO UPPER MIDDLE RIGHT
-cspin[15]="🭈"   # LOWER RIGHT BLOCK DIAGONAL LOWER LEFT TO LOWER MIDDLE RIGHT
-cspin[16]="▁"   # LOWER ONE EIGHTH BLOCK
-cspin[17]="🬽"   # LOWER LEFT BLOCK DIAGONAL LOWER MIDDLE LEFT TO LOWER RIGHT
-cspin[18]="🬼"   # LOWER LEFT BLOCK DIAGONAL LOWER MIDDLE LEFT TO LOWER CENTRE
-#cspin[18]="🬿"   # LOWER LEFT BLOCK DIAGONAL UPPER MIDDLE LEFT TO LOWER RIGHT
-cspin[19]="🬾"   # LOWER LEFT BLOCK DIAGONAL UPPER MIDDLE LEFT TO LOWER CENTRE
-cspin[20]="🭀"   # LOWER LEFT BLOCK DIAGONAL UPPER LEFT TO LOWER CENTRE
+declare -a cspin=("▏" "🭛" "🭙" "🭗" "🭘" "▔" "🭣" "🭢" "🭤" "🭦" "▕" "🭋" "🭉" "🭇" "🭈" "▁" "🬽" "🬼" "🬾" "🭀" )
   
-# braille spinner (3dot version)
 # braille dot numbers are
 # 14
 # 25
 # 36
 # 78
-bspin[1]="⠙"
-bspin[2]="⠸"
-bspin[3]="⢰"
-bspin[4]="⣠"
-bspin[5]="⣄"
-bspin[6]="⡆"
-bspin[7]="⠇"
-bspin[8]="⠋"
+# braille spinner (3dot version)
+declare -a bspin=("⠙" "⠸" "⢰" "⣠" "⣄" "⡆" "⠇" "⠋")
 # braille race (spinner with two opposing dots)
-brace[1]="⢁"
-brace[2]="⡈"
-brace[3]="⠔"
-brace[4]="⠢"
+declare -a brace=("⢁" "⡈" "⠔" "⠢")
 # braille2 race (spinner with two opposing pair of dots)
-b2race[1]="⣉"
-b2race[2]="⡜"
-b2race[3]="⠶"
-b2race[4]="⢣"
+declare -a b2race=("⣉" "⡜" "⠶" "⢣" )
 
 # ascii prop
-aprop[1]="\\"
-aprop[2]="|"
-aprop[3]="/"
-aprop[4]="-"
+declare -a aprop=( "\\" "|" "/" "-" )
 # unicode prop
-uprop[1]="╲"
-uprop[2]="│"
-uprop[3]="╱"
-uprop[4]="─"
+declare -a uprop=( "╲" "│" "╱" "─" )
+
+# scanner effect arrays
+declare -a hscan=( "▏" "🭰" "🭱" "🭲" "🭳" "🭴" "🭵" "▕" )
+declare -a vscan=( "▔" "🭶" "🭷" "🭸" "🭹" "🭺" "🭻" "▁" )
+
+# dancer
+declare -a dancer=( "🯅 " "🯆 " "🯅 " "🯇 " "🯅 " "🯈 " )
+
+# segmented display
+declare -a segmented=( "🯰 " "🯱 " "🯲 " "🯳 " "🯴 " "🯵 " "🯶 " "🯷 " "🯸 " "🯹 " )
+
+# tally marks
+declare -a tally=( "𝍩 " "𝍪 " "𝍫 " "𝍬 " "𝍸 " )
+
+
+# kitt colours (reds) and brightnesses (brightest to dimmest and black)
+declare -a red=( "$(tput setaf 196)" "$(tput setaf 01)" "$(tput setaf 88)" "$(tput setaf 52)" "$(tput setaf 0)" )
+declare -a brightness=( "█" "▓" "▒" "░" " " )
+# kitt/cylon illumination matrix ("0" is the "lit bulb" with short leading light leakage, and long fading tail
+kitt1R="1 0 3 4 4 4 4 4" # travelling right
+kitt2R="2 1 0 3 4 4 4 4"
+kitt3R="3 2 1 0 3 4 4 4"
+kitt4R="4 3 2 1 0 3 4 4"
+kitt5R="4 4 3 2 1 0 3 4"
+kitt6R="4 4 4 3 2 1 0 3"
+kitt7R="4 4 4 4 3 2 1 0" # rightmost bulb
+kitt6L="4 4 4 4 4 3 0 1" # travelling left
+kitt5L="4 4 4 4 3 0 1 2"
+kitt4L="4 4 4 3 0 1 2 3"
+kitt3L="4 4 3 0 1 2 3 4"
+kitt2L="4 3 0 1 2 3 4 4"
+kitt1L="3 0 1 2 3 4 4 4"
+kitt0L="0 1 2 3 4 4 4 4" # leftmost bulb
 
 #dot/circle like characters
 # ◌
@@ -125,8 +99,10 @@ inverse=$(tput rev)
 reset=$(tput sgr0)
 backone=$(tput cub 1)
 backtwo=$(tput cub 2)
+backthree=$(tput cub 3)
 sc=$(tput sc)
 rc=$(tput rc)
+el=$(tput el)
 
 tput civis      # hide cursor
 
@@ -148,7 +124,7 @@ do_marquee() {
     pos=2 # starting position. honestly not quite sure why this has to be non-zero :/
     while [ $pos -lt $stopat ] ; do
         echo -n "${rc} ${sc}"
-        for cnt in {8..1} ; do
+        for cnt in {7..0} ; do
             tstamp=$(sleepenh $tstamp $delay) 
             echo -n "${rc}${tail}${inverse}${leftblk[$cnt]}${message}${reset}${leftblk[$cnt]}${lead}"
         done
@@ -161,8 +137,8 @@ do_marquee() {
 ### block: left/right. $1 for direction, $2 for number of loops
 do_blk_lr() {
     # defaults for values and loop count
-    vals=$(echo {8..1}) # default: going right
-    [ "$1" == "left" ] && vals=$(echo {1..8})
+    vals=$(echo {7..0}) # default: going right
+    [ "$1" == "left" ] && vals=$(echo {0..7})
     loops=${2:-1} # default: loop once
 
     for loops in {1..$loops} ; do 
@@ -182,8 +158,8 @@ do_blk_lr() {
 ### block: up/down. $1 for direction, $2 for number of loops
 do_blk_ud() {
     # defaults for values and loop count
-    vals=$(echo {1..8}) # default: going down
-    [ "$1" == "up" ] && vals=$(echo {8..1})
+    vals=$(echo {0..7}) # default: going down
+    [ "$1" == "up" ] && vals=$(echo {7..0})
     loops=${2:-1} # default: loop once
     
     loops=${2:-1}
@@ -201,43 +177,45 @@ do_blk_ud() {
     done
 }
 
+### loop character array - simply step through an array of single characters
+# basically implements the various "spin", "prop" etc throbbers
 ### spinner - rotation around a center
 do_spin() {
+    # TODO: consider setting delay as a param? 
+    # ...or maybe only ever have it once here, and set it manually prior to calling do_spin when it needs to be something else
+
     # defaults for values and loop count
     arraysize=${#spin[@]}
-        # seq is not optimal, but readable (can't put $arraysize in {1..x} expansion in bash)
-    vals=$(seq 1 $arraysize) # default: going clockwise
-    [ "$1" == "anticw" ] && vals=$(seq $arraysize -1 1)
+    # seq is not optimal, but readable (can't do {0..$arraysize} expansion in bash)
+    vals=$(seq 0 $((arraysize-1))) # default: going clockwise
+    [ "$1" == "anticw" ] && vals=$(seq $((arraysize-1)) -1 0)
     loops=${2:-1} # default: loop once
 
-    loops=${2:-1}
-    for loops in {1..$loops} ; do 
+    for loop in $(seq 1 $loops) ; do 
         for cnt in $vals ; do
-            [ $arraysize -lt 10 ] && tstamp=$(sleepenh $tstamp $delay) # slowdown only for low frame count qix (brailleqix)
+            [ $arraysize -le 12 ] && tstamp=$(sleepenh $tstamp $delay) # slower on low frame count arrays
+            [ $arraysize -le 6 ] && tstamp=$(sleepenh $tstamp $delay) # even slower
             tstamp=$(sleepenh $tstamp $delay) 
-            echo -n "${backone}${spin[$cnt]}"
+            echo -n "${rc}${spin[$cnt]}"
         done
     done
 }
 
-### prop - a propeller spinning
-do_prop() {
-    # defaults for values and loop count
-    vals=$(echo {1..4}) # default: going clockwise
-    [ "$1" == "anticw" ] && vals=$(echo {4..1})
-    loops=${2:-1} # default: loop once
-    
-    loops=${2:-1}
-    for loops in {1..$loops} ; do 
-        # array sets "-" at the end.
-        # extra delay here so remains on screen longer to balance it's smaller size
+
+# kitt/cylon scanner
+do_kitt() {
+    # TODO: test on a white-bg terminal. May be worth forcing black bg
+    for keybulb in kitt{1..7}R kitt{6..0}L; do
+        declare -n kittstate=$keybulb
+        # kitt looks best at about this speed (where delay=0.04)
         tstamp=$(sleepenh $tstamp $delay) 
-        for cnt in $vals ; do
-            # prop is slowed from the default because it has so few frames
-            tstamp=$(sleepenh $tstamp $delay) 
-            tstamp=$(sleepenh $tstamp $delay) 
-            echo -n "${backone}${prop[$cnt]}"
+        tstamp=$(sleepenh $tstamp $delay) 
+        tstamp=$(sleepenh $tstamp $delay) 
+        echo -n "$rc"
+        for l in $kittstate ; do # l for lit-up state? 
+            echo -n "${red[$l]}${brightness[$l]}${brightness[$l]}${brightness[$l]}"
         done
+        echo -n "${el}"
     done
 }
 
@@ -252,14 +230,14 @@ case $1 in
             do_blk_ud down 1
         done
         ;;
-    marquee) # Block slides smoothly across an entire line then stops. If $2/etc then it becomes a plane banner with those arg as text
+    marquee) # Block slides smoothly across an entire line then stops. # If $2/etc then it becomes a plane banner with those args as banner text
         shift
         do_marquee "$*"
         ;;
-    spin) # Rotate forever aound an empty middle. 1 space
+    borderspin) # Parts of the border rotates forever aound an empty middle. 1 space
         declare -n spin=cspin
         while true ; do
-            do_spin
+            do_spin 
         done
         ;;
     movingblock) # (TODO) A block slides smoothly around a 2x2 space
@@ -297,42 +275,89 @@ case $1 in
         # implement with a custom character array of braille and do_spin?
         true
         ;;
-    kitt|cylon) # (TODO) K.I.T.T/cylon style scanner. Loops forever
-        # this likely needs a new function
-        # across like marquee, but then back again - adapt do_marquee?
-        # needs to be in red
-        # how "bulb like" can I make it? including light leakage into the neighbouring bulbs? 
-        # KITT original is 7 bulbs I think?
-        true
+    kitt|cylon) # K.I.T.T/cylon scanner. Loops forever. 1 line by default. # Optional fullscreen $2 arg: full
+        # original for reference: https://www.youtube.com/watch?v=usui7ECHPNQ (5m20)
+        #   * 8 elements
+        #   * brightens over ~3 frames
+        #   * dims over ~12 frames (previous 4 elements
+        #   * tiny light leakage into next?
+
+        # if we get a "full" param, we clear the screen and kitt at 3/4 the way down
+        [ "$2" == "full" ] && clear && tput cud $(($(tput lines)*3/4))
+        # the scanner is 8 lights, each is 3charwide, so 24wide total
+        # this cuf centers it
+        tput cuf $(( ($(tput cols)/2)-12 )) 
+        echo -n "${sc}"
+        while true ; do
+            do_kitt 1   # each do_kitt is a 14bulb loop (inner 6 bulbs once each going left/right, outermost bulbs once each on the bounce)
+        done
         ;;
     dot) # (TODO) A growing and shrinking solid dot (1space)
+
         true
         ;;
     tunnel) # (TODO) like dot, but zooms into it, looping. (1space)
         true
         ;;
     asciiprop|prop) # Traditional ascii "propellor" spinner using -\|/
-        declare -n prop=aprop
+        declare -n spin=aprop
         while true ; do
-            do_prop cw 1
+            do_spin 
+            tstamp=$(sleepenh $tstamp $delay) 
         done
         ;;
     uniprop) # Unicode version of the ascii propellor
-        declare -n prop=uprop
+        declare -n spin=uprop
         while true ; do
-            do_prop cw 1
+            do_spin
+            tstamp=$(sleepenh $tstamp $delay) 
         done
+        ;;
+    scanner) # single character scanner
+        while true ; do
+            declare -n spin=hscan
+            do_spin cw 1
+            do_spin anticw 1
+            declare -n spin=vscan
+            do_spin cw 1
+            do_spin anticw 1
+        done
+        ;;
+    dancer) # dancing stick figure
+        declare -n spin=dancer
+        echo -n "$sc"
+        while true ; do
+            do_spin 
+        done
+        ;;
+    tally) # Tally marker counting. Slowly grows across the line. # 0.5s/tally, 2.5s/ block - or 100seconds/80char term width
+        declare -n spin=tally
+        echo -n "$sc"
+        delay=0.16666 # do_spin will triply this timing, so each mark is 0.5 seconds
+        while true ; do
+            do_spin 1
+            echo -n "$sc"
+        done
+        ;;
+    countdown) # countdown from 9 to 0 (then exit - no looping)
+        declare -n spin=segmented
+        echo -n "$sc"
+        delay=0.5 # array of 10 means do_spin will double-delay
+        do_spin anticw 1
         ;;
     --help) # This help. You're reading it. 
         echo "
-A variety of unicode toys - mainly \"throbbers\" which animate within
-a very small space. Looping throbbbers end cleanly with ^c
+A variety of unicode \"throbber\" style toys
+ie, background-activity-indicators which animate within a small space. 
+
+Most loop forever and can be ended cleanly with ^c
 
 \$1 indicates the type of throbber. Any further params are throbber-specific. 
 
 \$1 options are:"
 
-        egrep "^    [a-z0-9|-]*\).*# " $0 | sed -e 's/)//' | column -t -s'#'
+#        egrep "^    [a-z0-9|-]*\).*# " $0 | sed -e 's/)//' | column -t -s'#'
+        egrep "^    [a-z0-9|-]*\).*# " $0 | grep -v TODO | sed -e 's/^    /  /g ; s/)// ; s/#/\n        /g'
         tput cnorm
         exit 0
         ;;
