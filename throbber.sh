@@ -32,6 +32,26 @@ declare -a bspin=("⠙" "⠸" "⢰" "⣠" "⣄" "⡆" "⠇" "⠋")
 declare -a brace=("⢁" "⡈" "⠔" "⠢")
 # braille2 race (spinner with two opposing pair of dots)
 declare -a b2race=("⣉" "⡜" "⠶" "⢣" )
+# braille 1dot gravity spinner. 8 frames top row, 4 frames next, 2 next and 1 frame at bottom. 
+#dot pattern: 4 4 4 4 4 4 4 4 5 5 5 5 6 6 8 7 3 3 2 2 2 2 1 1 1 1 1 1 1 1
+declare -a b1gravity=(
+"⠈" "⠈" "⠈" "⠈" "⠈" "⠈" "⠈" "⠈"
+"⠐" "⠐" "⠐" "⠐"
+"⠠" "⠠"
+"⢀"
+"⡀" 
+"⠄" "⠄" 
+"⠂" "⠂" "⠂" "⠂"
+"⠁" "⠁" "⠁" "⠁" "⠁" "⠁" "⠁" "⠁" )
+# braille 2dot gravity spinner. Same spin logic as 1dot, but with a second dot 15 frames later. Shorter array though!
+declare -a b2gravity=("⡈" "⠌" "⠌" "⠊" "⠊" "⠊" "⠊" "⠉" "⠑" "⠑" "⠑" "⠑" "⠡" "⠡" "⢁" )
+# braille 3dot gravity spinner. same logic again, 3 dots evenly spaced. even shorter array
+#4 4 4 4 4 4 4 4 5 5   5 5 6 6 8 7 3 3 2 2   2 2 1 1 1 1 1 1 1 1
+#5 5 6 6 8 7 3 3 2 2   2 2 1 1 1 1 1 1 1 1   4 4 4 4 4 4 4 4 5 5
+#2 2 1 1 1 1 1 1 1 1   4 4 4 4 4 4 4 4 5 5   5 5 6 6 8 7 3 3 2 2
+declare -a b3gravity=("⠚" "⠚" "⠩" "⠩" "⢉" "⡉" "⠍" "⠍" "⠓" "⠓" )
+# same pattern, but across double width to give a better "circle" 
+declare -a b3gravitywide=("⠂⠑" "⠂⠑ " "⠈⠡" "⠈⠡" "⠈⡁" "⢈⠁" "⠌⠁" "⠌⠁" "⠊⠐" "⠊⠐" )
 
 # ascii prop
 declare -a aprop=( "\\" "|" "/" "-" )
@@ -49,6 +69,9 @@ declare -a dancer=( "🯅 " "🯆 " "🯅 " "🯇 " "🯅 " "🯈 " )
 declare -a segmented=( "🯰 " "🯱 " "🯲 " "🯳 " "🯴 " "🯵 " "🯶 " "🯷 " "🯸 " "🯹 " )
 
 # tally marks
+# TODO/BUG: linux shows these as "COUNTING ROD UNIT DIGIT ONE (through FOUR)
+#           ...but iterm2 shows it as the COUNTING ROD TENS DIGIT ONE (to FOUR)
+#           ...huh?!
 declare -a tally=( "𝍩 " "𝍪 " "𝍫 " "𝍬 " "𝍸 " )
 
 
@@ -230,7 +253,7 @@ case $1 in
             do_blk_ud down 1
         done
         ;;
-    marquee) # Block slides smoothly across an entire line then stops. # If $2/etc then it becomes a plane banner with those args as banner text
+    marquee) # Block slides smoothly across an entire line then stops. # If $2/etc then it becomes a plane banner with those args as text # Bug: Does not end cleanly if $2 has wide unicode
         shift
         do_marquee "$*"
         ;;
@@ -248,7 +271,7 @@ case $1 in
             do_blk_ud up 1
         done
         ;;
-    braillespin) # Three rots rotate around an empty middle. 1 char
+    braillespin) # Three dots rotate around an empty middle. 1 char
         declare -n spin=bspin
         while true ; do
             do_spin
@@ -271,11 +294,31 @@ case $1 in
         # note: have to plan the whole game?
         true
         ;;
-    gravityspin) # (TODO) Microsoft style: speeds up going down, slows at top
-        # implement with a custom character array of braille and do_spin?
-        true
+    gravity1dot) # MS/Win style: speeds up going down, slows at top. 1dot version
+        declare -n spin=b1gravity
+        while true ; do
+            do_spin
+        done
         ;;
-    kitt|cylon) # K.I.T.T/cylon scanner. Loops forever. 1 line by default. # Optional fullscreen $2 arg: full
+    gravity2dot) # MS/Win style: speeds up going down, slows at top. 2dot version
+        declare -n spin=b2gravity
+        while true ; do
+            do_spin
+        done
+        ;;
+    gravity3dot) # MS/Win style: speeds up going down, slows at top. 3dot version
+        declare -n spin=b3gravity
+        while true ; do
+            do_spin
+        done
+        ;;
+    gravity3dotwide) # MS/Win style: speeds up going down, slows at top. 3dot wide version
+        declare -n spin=b3gravitywide
+        while true ; do
+            do_spin
+        done
+        ;;
+    kitt|cylon) # K.I.T.T/cylon scanner. Loops forever. 1 line by default. # $2 as "full" for fullscreen
         # original for reference: https://www.youtube.com/watch?v=usui7ECHPNQ (5m20)
         #   * 8 elements
         #   * brightens over ~3 frames
@@ -330,14 +373,30 @@ case $1 in
             do_spin 
         done
         ;;
-    tally) # Tally marker counting. Slowly grows across the line. # 0.5s/tally, 2.5s/ block - or 100seconds/80char term width
+    tally) # Tally marker counting. Slowly grows across the line. # 0.5s/stroke, 2.5s/tally block - or 100seconds/80char term width. # $2 to set a count target then stop
+        # TODO: a neat idea would be have this increment only on SIGINFO, so it could tick forward via an external call. Probably need a dedicated do_tally function though?
+        # TODO: esp in relation to the previous - have it output the total in numerals when it finishes
         declare -n spin=tally
+        charwidth=${#spin[0]}
+        COLUMNS=$(tput cols)
+        newlineat=$((COLUMNS/charwidth))
+        [ -n "$2" ] && stopat=$2
         echo -n "$sc"
-        delay=0.16666 # do_spin will triply this timing, so each mark is 0.5 seconds
+        delay=0.16666 # do_spin will triple this timing, so each mark is 0.5 seconds
         while true ; do
             do_spin 1
+            charcount=$((charcount+1))
+            tallycount=$((tallycount+5))
+            [ $charcount -ge $newlineat ] && echo "" && charcount=0
             echo -n "$sc"
+            [ $((tallycount/5)) -ge $((stopat/5)) ] && break
         done
+        # this is a microcosm of the main do_spin loop to finish up 
+        for finalise in $(seq 0 $((stopat-tallycount-1))) ; do
+            echo -n "${rc}${spin[$finalise]}"
+            tstamp=$(sleepenh $tstamp $delay) 
+        done
+        echo ""
         ;;
     countdown) # countdown from 9 to 0 (then exit - no looping)
         declare -n spin=segmented
@@ -352,7 +411,8 @@ ie, background-activity-indicators which animate within a small space.
 
 Most loop forever and can be ended cleanly with ^c
 
-\$1 indicates the type of throbber. Any further params are throbber-specific. 
+\$1 (required) indicates the type of throbber.
+\$2 (optional) and any further params are throbber-specific
 
 \$1 options are:"
 
