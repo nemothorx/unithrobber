@@ -10,7 +10,7 @@ function ctrl_c() {
     tput sgr0
     tput cnorm      # restore cursor
     case $exithint in
-        fromfull) tput cup $(tput lines) $(tput cols) ; echo ;;
+        fromfull) tput cup $(($(tput lines)-2)) $(tput cols) ;;
     esac
     exit 0
 }
@@ -114,32 +114,34 @@ kitt1L="3 0 1 2 3 4 4 4"
 kitt0L="0 1 2 3 4 4 4 4" # leftmost bulb at position 0
 
 #dot/circle like characters
-# ⊙       2299    CIRCLED DOT OPERATOR
-# ⊚       229A    CIRCLED RING OPERATOR
 # ⌾       233E    APL FUNCTIONAL SYMBOL CIRCLE JOT
 # ⍟       235F    APL FUNCTIONAL SYMBOL CIRCLE STAR
-# ⏣       23E3    BENZENE RING WITH CIRCLE
-# ⓞ       24DE    CIRCLED LATIN SMALL LETTER O
-# Ⓞ       24C4    CIRCLED LATIN CAPITAL LETTER O
+# ￮       FFEE    HALFWIDTH WHITE CIRCLE
+# ⚬       26AC    MEDIUM SMALL WHITE CIRCLE
+# ⊙       2299    CIRCLED DOT OPERATOR
+# ⊚       229A    CIRCLED RING OPERATOR
+# ❍       274D    SHADOWED WHITE CIRCLE
 # ○       25CB    WHITE CIRCLE
 # ◌       25CC    DOTTED CIRCLE
-# ◯       25EF    LARGE CIRCLE
-# ⚬       26AC    MEDIUM SMALL WHITE CIRCLE
-# ❍       274D    SHADOWED WHITE CIRCLE
 # ⦾       29BE    CIRCLED WHITE BULLET
+# ⏣       23E3    BENZENE RING WITH CIRCLE
+# ⓞ       24DE    CIRCLED LATIN SMALL LETTER O
+#
+# Ⓞ       24C4    CIRCLED LATIN CAPITAL LETTER O
+# ・    30FBKATAKANA MIDDLE DOT
 # ⦿       29BF    CIRCLED BULLET
 # ⨀       2A00    N-ARY CIRCLED DOT OPERATOR
-# ⭗       2B57    HEAVY CIRCLE WITH CIRCLE INSIDE
-# ⭘       2B58    HEAVY CIRCLE
-# ￮       FFEE    HALFWIDTH WHITE CIRCLE
 # 🔾       1F53E   LOWER RIGHT SHADOWED WHITE CIRCLE
 # 🔿       1F53F   UPPER RIGHT SHADOWED WHITE CIRCLE
+# ⭗       2B57    HEAVY CIRCLE WITH CIRCLE INSIDE
+# ⭘       2B58    HEAVY CIRCLE
 # 🞅       1F785   MEDIUM BOLD WHITE CIRCLE
 # 🞆       1F786   BOLD WHITE CIRCLE
 # 🞇       1F787   HEAVY WHITE CIRCLE
 # 🞈       1F788   VERY HEAVY WHITE CIRCLE
 # 🞉       1F789   EXTREMELY HEAVY WHITE CIRCLE
 # 🞊       1F78A   WHITE CIRCLE CONTAINING BLACK SMALL CIRCLE
+# ◯       25EF    LARGE CIRCLE
 # 
 # ·       00B7    MIDDLE DOT
 # ͼ       037C    GREEK SMALL DOTTED LUNATE SIGMA SYMBOL
@@ -150,7 +152,6 @@ kitt0L="0 1 2 3 4 4 4 4" # leftmost bulb at position 0
 # ᐧ       1427    CANADIAN SYLLABICS FINAL MIDDLE DOT
 # ⸱       2E31    WORD SEPARATOR MIDDLE DOT
 # ⸳       2E33    RAISED DOT
-# ・    30FBKATAKANA MIDDLE DOT
 # Ꜿ       A73E    LATIN CAPITAL LETTER REVERSED C WITH DOT
 # ꜿ       A73F    LATIN SMALL LETTER REVERSED C WITH DOT
 # ꞏ       A78F    LATIN LETTER SINOLOGICAL DOT
@@ -175,6 +176,7 @@ reset=$(tput sgr0)
 backone=$(tput cub 1)
 backtwo=$(tput cub 2)
 backthree=$(tput cub 3)
+black=$(tput setaf 16)
 sc=$(tput sc)
 rc=$(tput rc)
 el=$(tput el)
@@ -280,10 +282,10 @@ do_kitt() {
         declare -n kittstate=$keybulb
         tstamp=$(sleepenh $tstamp $delay) 
         echo -n "$rc"
-        for l in $kittstate ; do # l for lit-up state? 
+        for l in $kittstate ; do # l for lit-up state
             echo -n "${red[$l]}${brightness[$l]}${brightness[$l]}${brightness[$l]}"
         done
-        echo -n "${el}"
+        echo -n "${el}" # clear the rest of the line
     done
 }
 
