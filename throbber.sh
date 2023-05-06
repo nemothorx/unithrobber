@@ -11,6 +11,16 @@ function ctrl_c() {
     tput cnorm      # restore cursor
     case $exithint in
         fromfull) tput cup $(($(tput lines)-2)) $(tput cols) ;;
+        count) echo " $count " ;;
+        hours*) 
+            # exithint here is "hours fps frames-per-displayed-hour
+            subhints=${exithint#* }
+            fps=${subhints% *}
+            fph=${subhints#* }
+            durationsec=$(echo "scale=1;(${count}-1)/${fps}" | bc)
+            displayedhours=$(echo "scale=1;(${count}-1)/${fph}" | bc)
+            echo " $durationsec seconds ($displayedhours \"hours\" displayed)"
+            ;;
     esac
     exit 0
 }
@@ -22,6 +32,9 @@ tstamp=$(sleepenh 0)
 # individual throbbers may set their own delay to suit
 delay=0.04 
 
+# sometimes we count how many times we did a thing. 
+# ...it may be frames, or loops. depends on the throbber
+count=0
 
 ############ character arrays
 
@@ -88,7 +101,7 @@ declare -a segmented=( "🯰 " "🯱 " "🯲 " "🯳 " "🯴 " "🯵 " "🯶 " "
 # note: I'm using the "logically correct" glyphs for counting rod numerals for
 # 1-4 even though they dont match the look correctly, unless they do for you.
 # Who even knows. See the unicode-tally-rant.md file for more details.
-declare -a tally=( "𝍠 " "𝍡 " "𝍢 " "𝍤 " "𝍸 " )
+declare -a tally=( "𝍠 " "𝍡 " "𝍢 " "𝍣 " "𝍸 " )
 # Ideographic tally marks are complete and consistent in my testing
 declare -a ideographic=( "𝍲 " "𝍳 " "𝍴 " "𝍵 " "𝍶 " )
 
@@ -161,9 +174,9 @@ kitt0L="0 1 2 3 4 4 4 4" # leftmost bulb at position 0
 
 
 # clock faces. half-hour ticks is the resolution available via unicode
-clockfaces_all=("🕐" "🕜" "🕑" "🕝" "🕒" "🕞" "🕓" "🕟" "🕔" "🕠" "🕕" "🕡" "🕖" "🕢" "🕗" "🕣" "🕘" "🕤" "🕙" "🕥" "🕚" "🕦" "🕛" "🕧" )
+clockfaces_all=( "🕛" "🕧"  "🕐" "🕜" "🕑" "🕝" "🕒" "🕞" "🕓" "🕟" "🕔" "🕠" "🕕" "🕡" "🕖" "🕢" "🕗" "🕣" "🕘" "🕤" "🕙" "🕥" "🕚" "🕦" )
 # clock faces - top of the hour only
-clockfaces_hours=("🕐" "🕑" "🕒" "🕓" "🕔" "🕕" "🕖" "🕗" "🕘" "🕙" "🕚" "🕛" )
+clockfaces_hours=( "🕛"  "🕐" "🕑" "🕒" "🕓" "🕔" "🕕" "🕖" "🕗" "🕘" "🕙" "🕚"  )
 
 # moon faces. unicode order is northern-hemisphere style
 moonfaces=( "🌑" "🌒" "🌓" "🌔" "🌕" "🌖" "🌗" "🌘")
@@ -269,8 +282,9 @@ do_stepchar() {
 
     for loop in $(seq 1 $loops) ; do 
         for cnt in $vals ; do
-            tstamp=$(sleepenh $tstamp $delay) 
+            [ $count -gt 0 ] && tstamp=$(sleepenh $tstamp $delay) 
             echo -n "${rc}${spin[$cnt]}"
+            count=$((count+1))
         done
     done
 }
@@ -439,9 +453,10 @@ case $1 in
             do_stepchar 
         done
         ;;
-    tally|ideographic) # Tally marker counting. Slowly grows across the line. # 0.5s/stroke, 2.5s/tally block - or 100seconds/80char term width. # $2 to set a count target then stop # Doesn't look right? Blame unicode consortium for lack of options. 
+    tally|ideographic) # Tally marker counting. Slowly grows across the line. # 0.5s/stroke, 2.5s/tally block - or 100seconds/80char term width. # $2 to set a count target then stop. # Without a target, it counts till ^c then reports how many it counted # Doesn't look right? Blame unicode consortium for lack of options. # Will 
         # TODO: a neat idea would be have this increment only on SIGINFO, so it could tick forward via an external call. Probably need a dedicated do_tally function though?
         # TODO: esp in relation to the previous - have it output the total in numerals when it finishes
+        exithint=count
         declare -n spin=tally
         [ $1 == "ideographic" ] && declare -n spin=ideographic
         charwidth=${#spin[0]}
@@ -481,15 +496,17 @@ case $1 in
         done
         ;;
     clockslow) # A clock ticks away the moments that make up a dull day
+        exithint="hours 2 2"    # hint, fps, frames per "hour" display
         declare -n spin=clockfaces_all
-        delay=0.5 # one "hour" per second
+        delay=0.5 # one "hour" per second (2 frames/"hour")
         while true ; do
             do_stepchar
         done
         ;;
     clockfast) # A clock fritters and wastes the hours in an offhand way
+        exithint="hours 12 1"
         declare -n spin=clockfaces_hours
-        delay=0.083333 # 12fps = 12 hours displayed per second
+        delay=0.083333 # 12fps = 12 hours displayed per second (1 frame/"hour")
         while true ; do
             do_stepchar
         done
