@@ -3,26 +3,38 @@
 # unicode animation toys. 
 # usage: run `$0 --help` 
 
-# exit nicely 
-trap ctrl_c INT
-function ctrl_c() {
+# exit cleanly. perhaps with stats
+trap cleanxit 1 2 3 6 15  # aka: HUP INT QUIT ABRT TERM
+cleanxit() {
     echo ""
     tput sgr0
     tput cnorm      # restore cursor
     case $exithint in
         fromfull) tput cup $(($(tput lines)-2)) $(tput cols) ;;
-        count) echo " $count " ;;
-        hours*) 
+        count) echo " $count " >&2 ;;
+        hours*) # when we were displaying hours on a clock
             # exithint here is "hours fps frames-per-displayed-hour
+            # TODO: fix for when we have $ALARM set - because no set fps that way
             subhints=${exithint#* }
             fps=${subhints% *}
             fph=${subhints#* }
             durationsec=$(echo "scale=1;(${count}-1)/${fps}" | bc)
             displayedhours=$(echo "scale=1;(${count}-1)/${fph}" | bc)
-            echo " $durationsec seconds ($displayedhours \"hours\" displayed)"
+            if [ -n "$ALARM" ] ; then
+                echo " $count ticks ($displayedhours \"hours\" elapsed on display)" >&2
+            else
+                echo " $durationsec seconds ($displayedhours \"hours\" elapsed on display)" >&2
+            fi
             ;;
     esac
     exit 0
+}
+
+# using the SIGALRM signal for "increment throbber only on a signal" - this allows for our tick to be external
+trap do_tick SIGALRM
+do_tick() {
+    # jobs -p | xargs -r kill # this feels like a nice way to kill the backgrounds, but in practice it gets noisy if the ticks are too quick (eg, every 0.005 seconds. tested with "tally"
+    true
 }
 
 # setup our baseline chronology
@@ -35,6 +47,22 @@ delay=0.04
 # sometimes we count how many times we did a thing. 
 # ...it may be frames, or loops. depends on the throbber
 count=0
+
+do_delay() {
+    if [ -n "$ALARM" ] ; then
+        # external control - we tick on a remote SIGALRM only
+        while true ; do
+            sleep 2 & # one of these gets left behind on every ALRM
+                        # ... so we want it big enough to not fork excessively
+                        # ... but small enough to expire on it's own quickly
+                        # 2 seconds is my compromise of choice
+            wait || break   # wait till sleep finishes naturally, or break if we TRAP that alarm (SIGALRM)
+        done
+    else
+        # we're running on our internal tick
+        tstamp=$(sleepenh $tstamp $delay)
+    fi
+}
 
 ############ character arrays
 
@@ -213,7 +241,7 @@ do_marquee() {
     while [ $pos -lt $stopat ] ; do
         echo -n "${rc} ${sc}"
         for cnt in {7..0} ; do
-            tstamp=$(sleepenh $tstamp $delay) 
+            do_delay
             echo -n "${rc}${tail}${inverse}${leftblk[$cnt]}${message}${reset}${leftblk[$cnt]}${lead}"
         done
         pos=$((pos+1))
@@ -232,12 +260,12 @@ do_blk_lr() {
     for loops in {1..$loops} ; do 
         echo -n "$reset"
         for cnt in $vals ; do
-            tstamp=$(sleepenh $tstamp $delay) 
+            do_delay
             echo -n "${backone}${leftblk[$cnt]}"
         done
         echo -n "$inverse"
         for cnt in $vals ; do
-            tstamp=$(sleepenh $tstamp $delay) 
+            do_delay
             echo -n "${backone}${leftblk[$cnt]}"
         done
     done
@@ -254,12 +282,12 @@ do_blk_ud() {
     for loops in {1..$loops} ; do 
         echo -n "$inverse"
         for cnt in $vals ; do
-            tstamp=$(sleepenh $tstamp $delay) 
+            do_delay
             echo -n "${backone}${lowblk[$cnt]}"
         done
         echo -n "$reset"
         for cnt in $vals ; do
-            tstamp=$(sleepenh $tstamp $delay) 
+            do_delay
             echo -n "${backone}${lowblk[$cnt]}"
         done
     done
@@ -282,7 +310,7 @@ do_stepchar() {
 
     for loop in $(seq 1 $loops) ; do 
         for cnt in $vals ; do
-            [ $count -gt 0 ] && tstamp=$(sleepenh $tstamp $delay) 
+            ( [ -n "$ALARM" ] || [ $count -gt 0 ] ) && do_delay
             echo -n "${rc}${spin[$cnt]}"
             count=$((count+1))
         done
@@ -294,7 +322,7 @@ do_stepchar() {
 do_kitt() {
     for keybulb in kitt{1..7}R kitt{6..0}L; do
         declare -n kittstate=$keybulb
-        tstamp=$(sleepenh $tstamp $delay) 
+        do_delay
         echo -n "$rc"
         for l in $kittstate ; do # l for lit-up state
             echo -n "${red[$l]}${brightness[$l]}${brightness[$l]}${brightness[$l]}"
@@ -309,7 +337,14 @@ do_kitt() {
 tput civis
 echo -n "$sc"
 
-# choose our display mode - $1 in a case statement. 
+# Check if the first arg is "ALARM" and treat it special
+# ie: are we operating on our own clock, or on an external signal?
+if [ "$1" == "ALARM" ] ; then
+    ALARM=true
+    shift
+fi
+
+# now choose our display mode - $1 in a case statement. 
 #
 # these are not in order of implementation.
 # They may in the future be put into some vague order of logical progression/grouping though
@@ -453,9 +488,7 @@ case $1 in
             do_stepchar 
         done
         ;;
-    tally|ideographic) # Tally marker counting. Slowly grows across the line. # 0.5s/stroke, 2.5s/tally block - or 100seconds/80char term width. # $2 to set a count target then stop. # Without a target, it counts till ^c then reports how many it counted # Doesn't look right? Blame unicode consortium for lack of options. # Will 
-        # TODO: a neat idea would be have this increment only on SIGINFO, so it could tick forward via an external call. Probably need a dedicated do_tally function though?
-        # TODO: esp in relation to the previous - have it output the total in numerals when it finishes
+    tally|ideographic) # Tally marker counting. Slowly grows across the line. # 0.5s/stroke, 2.5s/tally block - or 100seconds/80char term width. # $2 to set a count target then stop. # Without a target, it counts till ^c then reports how many it counted # Doesn't look right? Blame unicode consortium for lack of options. 
         exithint=count
         declare -n spin=tally
         [ $1 == "ideographic" ] && declare -n spin=ideographic
@@ -475,10 +508,10 @@ case $1 in
         done
         # this is a microcosm of the main do_stepchar loop to finish up 
         for finalise in $(seq 0 $((stopat-tallycount-1))) ; do
-            tstamp=$(sleepenh $tstamp $delay) 
+            do_delay
             echo -n "${rc}${spin[$finalise]}"
         done
-        tstamp=$(sleepenh $tstamp $delay) 
+        [ -n "$ALARM" ] || tstamp=$(sleepenh $tstamp $delay)
         echo ""
         ;;
     countdown) # countdown from 9 to 0 (then exit - no looping)
@@ -514,9 +547,9 @@ case $1 in
     moon) # Phases of the moon. # $2 = "north" for anticlockwise/northern hemisphere phase sequence
         # array is in unicode order, which is also n.hemisphere view.
         # Default here is to reverse the direction as I think that 
-        # looks better as a spinner (giving apparent left-to-right motion)
-        # ...and also matches my s.hemisphere familiarity of moon phases 
-        # https://www.abc.net.au/news/science/2018-01-24/beginners-guide-to-the-moon/9320770
+        # [a] looks better as a spinner (giving apparent left-to-right motion)
+        # [b] and also matches my s.hemisphere familiarity of moon phases 
+        #     https://www.abc.net.au/news/science/2018-01-24/beginners-guide-to-the-moon/9320770
         declare -n spin=moonfaces
         direction=rev
         [ "$2" == "north" ] && direction=forward
@@ -531,6 +564,15 @@ A variety of unicode \"throbber\" style toys
 ie, background-activity-indicators which animate within a small space. 
 
 Most loop forever and can be ended cleanly with ^c
+Some provide exit statistics to stderr
+
+By default there is a $delay second delay between frames.
+Some toys set a different value. 
+If \"ALARM\" is given as ARG1 then the delay is controlled by external SIGALRM 
+    (ALARM mode does not alter anything else, including self-ending after
+    a threshold is reached (eg: marquee, tally <num>, countdown) 
+        example usage  : $0 ALARM tally 
+        then seperately: killall -s ALRM $0
 
 \$1 (required) indicates the type of throbber.
 \$2 (optional) and any further params are throbber-specific
