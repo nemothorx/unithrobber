@@ -6,8 +6,7 @@
 # exit cleanly. perhaps with stats
 trap cleanxit 1 2 3 6 15  # aka: HUP INT QUIT ABRT TERM
 cleanxit() {
-    echo ""
-    tput sgr0
+    echo "$reset"
     tput cnorm      # restore cursor
     case $exithint in
         fromfull) tput cup $(($(tput lines)-2)) $(tput cols) ;;
@@ -34,6 +33,8 @@ cleanxit() {
 trap do_tick SIGALRM
 do_tick() {
     # jobs -p | xargs -r kill # this feels like a nice way to kill the backgrounds, but in practice it gets noisy if the ticks are too quick (eg, every 0.005 seconds. tested with "tally"
+    # additionally, if SIGALRM arrives whilst we're inside do_tick, then do_tick just runs again and the ALRM doesn't move on, so it's in our best interest to make this functional as minimal as possible
+    # Sometimes something glitches (race condition maybe?) and a literal "Alarm clock" is printed to the terminal, creating visual noise and a newline. I don't know what makes this happen, but it happens more often at shorter delays, but has been observed at rates as low as 0.5 seconds between SIGALRMs. 
     true
 }
 
@@ -47,6 +48,12 @@ delay=0.04
 # sometimes we count how many times we did a thing. 
 # ...it may be frames, or loops. depends on the throbber
 count=0
+
+# for do_stepchar, these allow multiple characters to become a block
+# default number of characters to display at a time 
+# and lines at a time
+chars=1
+lineshint=1
 
 do_delay() {
     if [ -n "$ALARM" ] ; then
@@ -104,6 +111,22 @@ declare -a b2gravity=("⡈" "⠌" "⠌" "⠊" "⠊" "⠊" "⠊" "⠉" "⠑" "⠑
 declare -a b3gravity=("⠚" "⠚" "⠩" "⠩" "⢉" "⡉" "⠍" "⠍" "⠓" "⠓" )
 # same pattern, but across double width to give a better "circle" 
 declare -a b3gravitywide=("⠂⠑" "⠂⠑ " "⠈⠡" "⠈⠡" "⠈⡁" "⢈⠁" "⠌⠁" "⠌⠁" "⠊⠐" "⠊⠐" )
+# all possible braille dot patterns (255 of them), in unicode order
+declare -a braille=( 
+"⠁" "⠂" "⠃" "⠄" "⠅" "⠆" "⠇" "⠈" "⠉" "⠊" "⠋" "⠌" "⠍" "⠎" "⠏" "⠐" "⠑" "⠒" "⠓" "⠔"
+"⠕" "⠖" "⠗" "⠘" "⠙" "⠚" "⠛" "⠜" "⠝" "⠞" "⠟" "⠠" "⠡" "⠢" "⠣" "⠤" "⠥" "⠦" "⠧" "⠨"
+"⠩" "⠪" "⠫" "⠬" "⠭" "⠮" "⠯" "⠰" "⠱" "⠲" "⠳" "⠴" "⠵" "⠶" "⠷" "⠸" "⠹" "⠺" "⠻" "⠼"
+"⠽" "⠾" "⠿" "⡀" "⡁" "⡂" "⡃" "⡄" "⡅" "⡆" "⡇" "⡈" "⡉" "⡊" "⡋" "⡌" "⡍" "⡎" "⡏" "⡐"
+"⡑" "⡒" "⡓" "⡔" "⡕" "⡖" "⡗" "⡘" "⡙" "⡚" "⡛" "⡜" "⡝" "⡞" "⡟" "⡠" "⡡" "⡢" "⡣" "⡤"
+"⡥" "⡦" "⡧" "⡨" "⡩" "⡪" "⡫" "⡬" "⡭" "⡮" "⡯" "⡰" "⡱" "⡲" "⡳" "⡴" "⡵" "⡶" "⡷" "⡸"
+"⡹" "⡺" "⡻" "⡼" "⡽" "⡾" "⡿" "⢀" "⢁" "⢂" "⢃" "⢄" "⢅" "⢆" "⢇" "⢈" "⢉" "⢊" "⢋" "⢌"
+"⢍" "⢎" "⢏" "⢐" "⢑" "⢒" "⢓" "⢔" "⢕" "⢖" "⢗" "⢘" "⢙" "⢚" "⢛" "⢜" "⢝" "⢞" "⢟" "⢠"
+"⢡" "⢢" "⢣" "⢤" "⢥" "⢦" "⢧" "⢨" "⢩" "⢪" "⢫" "⢬" "⢭" "⢮" "⢯" "⢰" "⢱" "⢲" "⢳" "⢴"
+"⢵" "⢶" "⢷" "⢸" "⢹" "⢺" "⢻" "⢼" "⢽" "⢾" "⢿" "⣀" "⣁" "⣂" "⣃" "⣄" "⣅" "⣆" "⣇" "⣈"
+"⣉" "⣊" "⣋" "⣌" "⣍" "⣎" "⣏" "⣐" "⣑" "⣒" "⣓" "⣔" "⣕" "⣖" "⣗" "⣘" "⣙" "⣚" "⣛" "⣜"
+"⣝" "⣞" "⣟" "⣠" "⣡" "⣢" "⣣" "⣤" "⣥" "⣦" "⣧" "⣨" "⣩" "⣪" "⣫" "⣬" "⣭" "⣮" "⣯" "⣰"
+"⣱" "⣲" "⣳" "⣴" "⣵" "⣶" "⣷" "⣸" "⣹" "⣺" "⣻" "⣼" "⣽" "⣾" "⣿")
+
 
 # ascii and unicode prop
 declare -a aprop=( "\\" "|" "/" "-" )
@@ -120,7 +143,7 @@ declare -a hscan=( "▏" "🭰" "🭱" "🭲" "🭳" "🭴" "🭵" "▕" )
 declare -a vscan=( "▔" "🭶" "🭷" "🭸" "🭹" "🭺" "🭻" "▁" )
 
 # dancer
-declare -a dancer=( "🯅 " "🯆 " "🯅 " "🯇 " "🯅 " "🯈 " )
+declare -a dancer=( "🯅 " "🯆 " "🯅 " "🯇 " "🯈 " ) # 4 dance moves. we repeat the most neutral because it looks better
 
 # segmented display
 declare -a segmented=( "🯰 " "🯱 " "🯲 " "🯳 " "🯴 " "🯵 " "🯶 " "🯷 " "🯸 " "🯹 " )
@@ -217,7 +240,8 @@ reset=$(tput sgr0)
 backone=$(tput cub 1)
 backtwo=$(tput cub 2)
 backthree=$(tput cub 3)
-black=$(tput setaf 16)
+downone=$(tput cud 1)
+uptwo=$(tput cuu 2)
 sc=$(tput sc)
 rc=$(tput rc)
 el=$(tput el)
@@ -295,9 +319,11 @@ do_blk_ud() {
 
 ### step through an array of single characters
 # basically implements the various generic throb/spin/prop etc throbbers
-# it has a few options to allow it to be used cleverly for other needs too
+# it has a few options to allow for variations in usage
+# if $chars is set then it prints that many characters before restoring cursor
 do_stepchar() {
-    # $1 = "rev" to reverse direction. (default/any other string: forward) 
+    # $1 = "rev" to reverse direction. "rnd" to randomise order
+    #       (default/any other string: forward) 
     # $2 = [0-9]* - a number to denote how many loops (default: 1)
         # both arguments are optional
 
@@ -305,13 +331,24 @@ do_stepchar() {
     arraysize=${#spin[@]}
     # seq doesn't feel optimal, but I can't do {0..$variable} expansion in bash)
     vals=$(seq 0 $((arraysize-1))) # default: going clockwise
-    [ "$1" == "rev" ] && vals=$(seq $((arraysize-1)) -1 0)
+    case $1 in 
+        rev) vals=$(seq $((arraysize-1)) -1 0) ;;
+        rnd) vals=$(shuf -i 0-$((arraysize-1)) ) ;;
+    esac
     loops=${2:-1} # default: loop once
 
     for loop in $(seq 1 $loops) ; do 
         for cnt in $vals ; do
-            ( [ -n "$ALARM" ] || [ $count -gt 0 ] ) && do_delay
-            echo -n "${rc}${spin[$cnt]}"
+            if [ $((count%chars)) -eq 0 ] ; then
+                # if we've COUNTed a full loop of CHARS, then delay
+                ( [ -n "$ALARM" ] || [ $count -gt 0 ] ) && do_delay
+                echo -n "${rc}"
+            elif [ $((count%(chars/lineshint))) -eq 0 ] ; then
+                # if we've COUNTed a line-width, then go down and back
+                # for another line in the block
+                echo -n "${downone}$(tput cub $charstmp)"
+            fi
+            echo -n "${spin[$cnt]}"
             count=$((count+1))
         done
     done
@@ -397,6 +434,29 @@ case $1 in
         # note: have to plan the whole game?
         true
         ;;
+    braille) # Step through all braille dot patterns in unicode order # $2 = "rev" to reverse, "rnd" to randomise. Anything else = default order # $3 = "full" for a fullscreen mode. 
+        declare -n spin=braille
+        delay=0.333
+        if [ "$3" == "full" ] ; then
+            # define a block we want to fill out - lineshint x charstmp
+            lineshint=$(( $(tput lines)*1/4 )) # multiple lines: 1/4 height of the terminal (so on a 24line terminal, 6 lines)
+            charstmp=$(( $(tput cols)*3/4 ))  # width? ... 3/4 terminal wide (soon an 80charwide terminal, 60) 
+                # honestly, the above is stretching the limit of what's sensible to do in a shell script, rather than ncurses, or libcaca, etc.
+            tput setab 16 # set a black background
+            tput cup 0 0 # move to top of the screen
+            tput ed # clear screen (does ed mean "erase display"?)
+            tput cud $(( ($(tput lines)-lineshint)/2 )) # move to ~half way down the screen
+            positionhint="centered" # for the do_stepchar function
+            exithint="fromfull" # hint to the ctrl_c function
+            tput cuf $(( ($(tput cols)/2)-$((charstmp/2)) )) # center the output
+            tput setaf 178 # 178 seems yellow bulb colour (PDP-12). 196 for red LED (Connection Machine). 166 for amber terminal. 40 for green terminal 
+            chars=$((charstmp*lineshint)) # chars is per-line chars * lines
+            echo -n "$sc"
+        fi
+        while true ; do
+            do_stepchar $2
+        done
+        ;;
     gravity1dot) # MS/Win style: speeds up going down, slows at top. 1dot version
         declare -n spin=b1gravity
         while true ; do
@@ -421,7 +481,7 @@ case $1 in
             do_stepchar
         done
         ;;
-    kitt|cylon) # K.I.T.T/cylon scanner on black bg. Loops forever. 1 line by default. # $2 as "full" for fullscreen
+    kitt|cylon) # K.I.T.T/cylon scanner on black bg. Loops forever. 1 line by default. # $2 = "full" for fullscreen mode
         # orig reference: https://www.youtube.com/watch?v=usui7ECHPNQ (5m20)
         #   * 8 elements
         #   * brightens over ~3 frames
@@ -444,14 +504,13 @@ case $1 in
         echo -n "${sc}"
         delay=0.142857 # 7fps means it makes one scan L-R or R-L per second
         delay=0.0714285 # 14fps means it makes one full scan L-R-L loop per sec
-        delay=0.112857 # aiming to get super close to the reference video speed (31.6 LRL in 20 seconads)
+        delay=0.112857 # reference video speed (31.6 L-R-L in 20 seconads)
         delay=0.107142 # 9 1/3 fps means a L-R-L loop in 1.5 seconds is a nice round number whilst still very close to the reference videoa
         while true ; do
             do_kitt 1   # each do_kitt is a 14bulb loop (inner 6 bulbs once each going left/right, outermost bulbs once each on the bounce)
         done
         ;;
     dot) # (TODO) A growing and shrinking solid dot (1space)
-
         true
         ;;
     tunnel) # (TODO) like dot, but zooms into it, looping. (1space)
@@ -480,12 +539,21 @@ case $1 in
             do_stepchar rev 1
         done
         ;;
-    dancer) # dancing stick figure
+    dancer) # dancing stick figure # $2 = how many dancers. This will center them. Limited to $columns/2-1
         delay=0.3333 # 3fps looks about right. 2 seconds for a full danceloop
         declare -n spin=dancer
+        chars=${2:-1}     # how many dancers. default to 1
+        if [ "$chars" -gt 1 ] ; then
+            maxdancers=$(( $(tput cols)/2-1 ))
+            [ "$chars" -gt $maxdancers ] && chars=$maxdancers
+            tput cuf $(( ($(tput cols)/2)-$chars )) # center the output. each dancer is 2char wide so $((chars/2*2)) cancels out
+            positionhint=centered
+            order=rnd
+            delay=0.2   # faster looks better when we're multiple+random
+        fi
         echo -n "$sc"
         while true ; do
-            do_stepchar 
+            do_stepchar $order
         done
         ;;
     tally|ideographic) # Tally marker counting. Slowly grows across the line. # 0.5s/stroke, 2.5s/tally block - or 100seconds/80char term width. # $2 to set a count target then stop. # Without a target, it counts till ^c then reports how many it counted # Doesn't look right? Blame unicode consortium for lack of options. 
@@ -568,6 +636,7 @@ Some provide exit statistics to stderr
 
 By default there is a $delay second delay between frames.
 Some toys set a different value. 
+
 If \"ALARM\" is given as ARG1 then the delay is controlled by external SIGALRM 
     (ALARM mode does not alter anything else, including self-ending after
     a threshold is reached (eg: marquee, tally <num>, countdown) 
@@ -580,7 +649,7 @@ If \"ALARM\" is given as ARG1 then the delay is controlled by external SIGALRM
 \$1 options are:"
 
 #        egrep "^    [a-z0-9|-]*\).*# " $0 | sed -e 's/)//' | column -t -s'#'
-        egrep "^    [a-z0-9|*-]*\).*# " $0 | grep -v TODO | sed -e 's/^    /  /g ; s/)// ; s/#/\n        /g'
+        egrep "^    [a-z0-9|*-]*\).*# " $0 | grep -v TODO | sed -e 's/^    /  /g ; s/)// ; s/# /\n   - /g'
         ;;
     *) # Unrecognised options trigger marquee output with a "--help"ful hint
         do_marquee "Run \"$0 --help\" for options"
