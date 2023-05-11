@@ -322,6 +322,7 @@ do_blk_ud() {
 # it has a few options to allow for variations in usage
 # if $chars is set then it prints that many characters before restoring cursor
 do_stepchar() {
+    delay=1
     # $1 = "rev" to reverse direction. "rnd" to randomise order
     #       (default/any other string: forward) 
     # $2 = [0-9]* - a number to denote how many loops (default: 1)
@@ -346,7 +347,11 @@ do_stepchar() {
             elif [ $((count%(chars/lineshint))) -eq 0 ] ; then
                 # if we've COUNTed a line-width, then go down and back
                 # for another line in the block
-                echo -n "${downone}$(tput cub $charstmp)"
+                # TODO: change this method so it will work with WIDE unicode characters too (eg, dancers). 
+                # (rc, then calculate how many lines down, yeah?
+                # echo -n "${downone}$(tput cub $charstmp)"
+                echo -n "$rc$(tput cuu 1 )$count $chars $lineshint $rc"
+                tput cud $(( count%(chars/lineshint) ))
             fi
             echo -n "${spin[$cnt]}"
             count=$((count+1))
@@ -434,27 +439,37 @@ case $1 in
         # note: have to plan the whole game?
         true
         ;;
-    braille) # Step through all braille dot patterns in unicode order # $2 = "rev" to reverse, "rnd" to randomise. Anything else = default order # $3 = "full" for a fullscreen mode. 
+    braille|cm-5) # Step through all braille dot patterns in unicode order # $2 = "rev" to reverse, "rnd" to randomise. Anything else = default order # $3 = "full" for a fullscreen mode # "cm-5" is a shortcut to "rnd full" and additionally turns it red. 
         declare -n spin=braille
         delay=0.333
-        if [ "$3" == "full" ] ; then
-            # define a block we want to fill out - lineshint x charstmp
-            lineshint=$(( $(tput lines)*1/4 )) # multiple lines: 1/4 height of the terminal (so on a 24line terminal, 6 lines)
-            charstmp=$(( $(tput cols)*3/4 ))  # width? ... 3/4 terminal wide (soon an 80charwide terminal, 60) 
-                # honestly, the above is stretching the limit of what's sensible to do in a shell script, rather than ncurses, or libcaca, etc.
+        order=${2:-fwd}
+        [ $1 == "cm-5" ] && order="rnd" # override $order for cm-5 mode
+        if ( [ "$1" == "cm-5" ] || [ "$3" == "full" ] ) ; then
+            # honestly, this is stretching the limit of what's sensible to do in a shell script, rather than ncurses, or libcaca, etc.
+            # anyway... define a block we want to fill - lineshint x charstmp
+            lineshint=$(( $(tput lines)/2 )) # multiple lines - half the terminal height
+            charstmp=$(( lineshint*2 ))  # twice as many chars as lines is approx square
+            # and check from the other direction to ensure adequate border
+            if [ $charstmp -gt $(( $(tput cols)*3/5 )) ] ; then
+                charstmp=$(( $(tput cols)*3/5 ))
+                lineshint=$(( charstmp/2 ))
+            fi
             tput setab 16 # set a black background
             tput cup 0 0 # move to top of the screen
-            tput ed # clear screen (does ed mean "erase display"?)
-            tput cud $(( ($(tput lines)-lineshint)/2 )) # move to ~half way down the screen
+            tput ed # clear screen (I mean, "erase display" I guess?)
+            # starting position is calculated to give a centered square
+            tput cud $(( ($(tput lines)-lineshint)/2 )) # calculated start row
+            tput cuf $(( ($(tput cols)/2)-$((charstmp/2)) )) # start column
+            # colours. 178 seems yellow bulb colour (PDP-12). 196 for red LED (Connection Machine). 166 for amber terminal. 40 for green terminal 
+            [ $1 == "cm-5" ] && colcode=196 || colcode=178 # default to 178, go 196 only for the connection machine mode
+            tput setaf $colcode 
+            chars=$((charstmp*lineshint)) # chars is per-line chars * lines
             positionhint="centered" # for the do_stepchar function
             exithint="fromfull" # hint to the ctrl_c function
-            tput cuf $(( ($(tput cols)/2)-$((charstmp/2)) )) # center the output
-            tput setaf 178 # 178 seems yellow bulb colour (PDP-12). 196 for red LED (Connection Machine). 166 for amber terminal. 40 for green terminal 
-            chars=$((charstmp*lineshint)) # chars is per-line chars * lines
-            echo -n "$sc"
+            echo -n "$sc"   # save our spot and get going
         fi
         while true ; do
-            do_stepchar $2
+            do_stepchar $order
         done
         ;;
     gravity1dot) # MS/Win style: speeds up going down, slows at top. 1dot version
