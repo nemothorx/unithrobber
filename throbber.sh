@@ -322,7 +322,6 @@ do_blk_ud() {
 # it has a few options to allow for variations in usage
 # if $chars is set then it prints that many characters before restoring cursor
 do_stepchar() {
-    delay=1
     # $1 = "rev" to reverse direction. "rnd" to randomise order
     #       (default/any other string: forward) 
     # $2 = [0-9]* - a number to denote how many loops (default: 1)
@@ -350,8 +349,9 @@ do_stepchar() {
                 # TODO: change this method so it will work with WIDE unicode characters too (eg, dancers). 
                 # (rc, then calculate how many lines down, yeah?
                 # echo -n "${downone}$(tput cub $charstmp)"
-                echo -n "$rc$(tput cuu 1 )$count $chars $lineshint $rc"
-                tput cud $(( count%(chars/lineshint) ))
+#                echo -n "$rc$(tput cuu 1 )$count $chars $lineshint $rc"
+                echo -n "$rc"
+                tput cud $(( (count%chars)/(chars/lineshint) ))
             fi
             echo -n "${spin[$cnt]}"
             count=$((count+1))
@@ -454,6 +454,7 @@ case $1 in
                 charstmp=$(( $(tput cols)*3/5 ))
                 lineshint=$(( charstmp/2 ))
             fi
+            [ "$1" != "cm-5" ] && lineshint=$((lineshint/3)) && charstmp=$((charstmp*2)) # change propostions if not cm-5. TODO: make this more comprehensive like the above is
             tput setab 16 # set a black background
             tput cup 0 0 # move to top of the screen
             tput ed # clear screen (I mean, "erase display" I guess?)
