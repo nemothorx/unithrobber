@@ -439,7 +439,7 @@ case $1 in
         # note: have to plan the whole game?
         true
         ;;
-    braille|cm-5) # Step through all braille dot patterns in unicode order # $2 = "rev" to reverse, "rnd" to randomise. Anything else = default order # $3 = "full" for a fullscreen mode # "cm-5" is a shortcut to "rnd full" and additionally turns it red. 
+    braille|cm-2) # Step through all braille dot patterns in unicode order # $2 = "rev" to reverse, "rnd" to randomise. Anything else = default order # $3 = "full" for a fullscreen mode # "cm-2" is a shortcut to "rnd full" and additionally turns it red
         declare -n spin=braille
         delay=0.333
         order=${2:-fwd}
