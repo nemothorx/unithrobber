@@ -156,6 +156,8 @@ declare -a tally=( "𝍠 " "𝍡 " "𝍢 " "𝍣 " "𝍸 " )
 # Ideographic tally marks are complete and consistent in my testing
 declare -a ideographic=( "𝍲 " "𝍳 " "𝍴 " "𝍵 " "𝍶 " )
 
+# dice
+declare -a d6=("⚀" "⚁" "⚂" "⚃" "⚄" "⚅")
 
 # kitt colours (reds) and brightnesses (brightest to dimmest and black)
 declare -a red=( "$(tput setaf 196)" "$(tput setaf 160)" "$(tput setaf 88)" "$(tput setaf 52)" "$(tput setaf 16)" )
@@ -597,6 +599,31 @@ case $1 in
         done
         [ -n "$ALARM" ] || tstamp=$(sleepenh $tstamp $delay)
         echo ""
+        ;;
+    dice) # dice faces # $2="tally" for a pseudo duodecimal tally system #    3sec/dice = 4min/line # $2="roll" to stop after a few moments with a result. 
+        declare -n spin=d6
+        delay=0.5 # 1 dot per half second. 3 seconds per dice. 
+        case $2 in
+            roll)
+                delay=0.1 # 6 faces in 0.6 seconds
+                do_stepchar rnd 1
+                echo -e "\n$((cnt+1))" # echo the numeric result too
+                ;;
+            tally)
+                delay=0.5 
+                echo "TODO: implement this" # TODO
+                while true ; do
+                    do_stepchar fwd 1
+                    tput cuf 1
+                    tput sc
+                done
+                ;;
+            *)
+                while true ; do
+                    do_stepchar fwd 1
+                done
+                ;;
+        esac
         ;;
     countdown) # countdown from 9 to 0 (then exit - no looping)
         declare -n spin=segmented
