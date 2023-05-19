@@ -375,6 +375,118 @@ do_kitt() {
     done
 }
 
+# a tally/counting thing - Slowly grows across the line. 
+do_tally() {
+#    delay=0.05   # faster for debugging
+    exithint=count
+    charwidth=${#spin[0]}
+    COLUMNS=$(tput cols)
+    newlineat=$((COLUMNS-1))
+    tallysize=${#spin[@]}
+#    echo "DEBUG: charwidth: $charwidth, COLUMNS: $COLUMNS, newlineat: $newlineat, tallysize: $tallysize, gapevery: $gapevery"
+    echo -n "$sc"
+    while true ; do
+        [ -n "$stopat" ] && [ $((tallycount/tallysize)) -ge $((stopat/tallysize)) ] && break
+        do_stepchar 
+        colsused=$((colsused+charwidth)) # keep track of characters used /line
+        tallycount=$((tallycount+tallysize))
+        charcount=$((charcount+1))
+        if [ $((charcount%gapevery)) -eq 0 ] ; then
+            if [ $((colsused+gapevery)) -ge $newlineat ] ; then
+                echo "" 
+                colsused=0
+            else
+                colsused=$((colsused+1))
+#                echo -n "${colsused:0:1}"
+                echo -n " "
+            fi
+        fi
+        echo -n "$sc"
+    done
+    # this is a microcosm of the main do_stepchar loop to finish up 
+    for finalise in $(seq 0 $((stopat-tallycount-1))) ; do
+        do_delay
+        echo -n "${rc}${spin[$finalise]}"
+    done
+    [ -n "$ALARM" ] || tstamp=$(sleepenh $tstamp $delay)
+    echo ""
+}
+
+
+do_cm5() {
+# based off the cm-5 "random and pleasing" LED panel mode (rev. 3)
+# ...no, that's a lie. It's based off a gif off one of those. 
+# ...and also some C, which starts like this
+#   /* written by iskunk (Daniel Richard G.)
+#      http://www.housedillon.com/?p=1272 (check the Wayback Machine)
+#      emulates CM-5's 'random and pleasing' LED panel mode (rev. 3)
+#      FILE IS IN THE PUBLIC DOMAIN */
+# ...and which I didn't note where I found it online, and then ignored it's code anyway
+
+# What this does is fill each line with random braille characters, and then
+# alternating lines move left and right
+#
+# HOW:
+# each line is stored as a line of characters, then an addition is added at the appropriate end, and redraw
+
+    clear
+    tput sc
+    delay=0.5
+    tput setaf 196  # a red
+    LINES=$(tput lines)
+    blockheight=${1:-$2}  # how many lines to move together in a block
+    totheight=$(( ((LINES-2)/blockheight)*blockheight ))
+    topoffset=$(( (LINES-totheight)/2))
+
+    COLUMNS=$(tput cols)
+    width=$((COLUMNS/3))
+    blankline=$(for c in $(seq 1 $COLUMNS) ; do echo -n '.' ; done)
+    ich1=$(tput ich 1) # let's save the output of this for future use
+    arraysize=$((${#braille[@]}))
+
+    moveit="$(tput cud 1)$(tput cub $COLUMNS)$(tput cuf $(( (COLUMNS-width)/2 )))"
+
+    offset=0
+
+    # template block
+    tblock=$(for line in $(seq 1 $blockheight) ; do
+       tmp="$blankline
+$tmp
+"
+    done
+    echo "$tmp")
+
+
+
+    while true ; do
+        [ "$offset" -eq 0 ] && echo -n "$rc" && do_delay
+        case $(( ($offset/$blockheight)%2 )) in
+            0)  ## even = move right
+                [ -z "${rblock[$offset]}" ] && rblock[$offset]="$tblock"
+                rblock[$offset]="$(echo "${rblock[$offset]}" | while read line ; do
+                    echo -n "${moveit}$(tput setaf 160)${braille[$((RANDOM%arraysize))]}"  # random braille char
+                    echo "${line:0:$((width-1))}x[$offset]"
+                done | head -n $blockheight)
+    "
+                echo -n "${rblock[$offset]}z"
+                ;;
+            1)  ## odd = move left
+                [ -z "${lblock[$offset]}" ] && lblock[$offset]="$tblock"
+                lblock[$offset]="$(echo "${lblock[$offset]}" | while read line ; do
+                   echo -n "$(tput setaf 118)${moveit}${line:1:${width-1}}"
+                    echo "${braille[$((RANDOM%arraysize))]}x[$offset]"  # random braille char
+                done | head -n $blockheight)
+    "
+                echo -n "${lblock[$offset]}z"
+                ;;
+        esac
+        offset=$((offset+blockheight))
+        [ "$((offset+topoffset+blockheight))" -gt "$((LINES-1))" ] && offset=0 
+    done
+
+}
+
+
 ##################################################### main
 
 # start the run by hiding the cursor and saving position
@@ -475,6 +587,10 @@ case $1 in
             do_stepchar $order
         done
         ;;
+    cm-5) # a pretty CM-5 visualisation # $2 specifies how many lines to move together (default 1)
+        exithint=fromfull
+        do_cm5 $2
+        ;;
     gravity1dot) # MS/Win style: speeds up going down, slows at top. 1dot version
         declare -n spin=b1gravity
         while true ; do
@@ -574,53 +690,33 @@ case $1 in
             do_stepchar $order
         done
         ;;
-    tally|ideographic) # Tally marker counting. Slowly grows across the line. # 0.5s/stroke, 2.5s/tally block - or 100seconds/80char term width. # $2 to set a count target then stop. # Without a target, it counts till ^c then reports how many it counted # Doesn't look right? Blame unicode consortium for lack of options. 
-        exithint=count
+    tally|ideographic) # Tally marker counting. Slowly grows across the line in pairs. # 0.5s/stroke, 2.5s/tally block, 5s/pair-of-10 # $2 to set a count target then stop. # Without a target, it counts till ^c then reports how many it counted # Doesn't look right? Blame unicode consortium for lack of options. 
         declare -n spin=tally
         [ $1 == "ideographic" ] && declare -n spin=ideographic
-        charwidth=${#spin[0]}
-        COLUMNS=$(tput cols)
-        newlineat=$((COLUMNS/charwidth))
         [ -n "$2" ] && stopat=$2
-        echo -n "$sc"
         delay=0.5 # 1 tally mark per 0.5 seconds
-        while true ; do
-            do_stepchar 
-            charcount=$((charcount+1))
-            tallycount=$((tallycount+5))
-            [ $charcount -ge $newlineat ] && echo "" && charcount=0
-            echo -n "$sc"
-            [ -n "$stopat" ] && [ $((tallycount/5)) -ge $((stopat/5)) ] && break
-        done
-        # this is a microcosm of the main do_stepchar loop to finish up 
-        for finalise in $(seq 0 $((stopat-tallycount-1))) ; do
-            do_delay
-            echo -n "${rc}${spin[$finalise]}"
-        done
-        [ -n "$ALARM" ] || tstamp=$(sleepenh $tstamp $delay)
-        echo ""
+        gapevery=2  # 
+        do_tally    # $delay, $stopat and $gapevery - as defined here, are used
         ;;
-    dice) # dice faces # $2="tally" for a pseudo duodecimal tally system #    3sec/dice = 4min/line # $2="roll" to stop after a few moments with a result. 
+    dice) # Show dice faces 1 to 6 then back again. Repeat # $2="tally" for a pseudo duodecimal tally system # 3sec/dice, 6sec/dozen count # $2="roll" to stop after a few moments with a result. 
         declare -n spin=d6
         delay=0.5 # 1 dot per half second. 3 seconds per dice. 
         case $2 in
             roll)
-                delay=0.1 # 6 faces in 0.6 seconds
-                do_stepchar rnd 1
+                delay=0.08333 # 6 faces in 0.5 seconds
+                do_stepchar rnd 3 # 3 loops of the array
                 echo -e "\n$((cnt+1))" # echo the numeric result too
                 ;;
             tally)
                 delay=0.5 
-                echo "TODO: implement this" # TODO
-                while true ; do
-                    do_stepchar fwd 1
-                    tput cuf 1
-                    tput sc
-                done
+                [ -n "$3" ] && stopat=$3
+                gapevery=2
+                do_tally
                 ;;
             *)
                 while true ; do
                     do_stepchar fwd 1
+                    do_stepchar rev 1
                 done
                 ;;
         esac
@@ -692,7 +788,7 @@ If \"ALARM\" is given as ARG1 then the delay is controlled by external SIGALRM
 \$1 options are:"
 
 #        egrep "^    [a-z0-9|-]*\).*# " $0 | sed -e 's/)//' | column -t -s'#'
-        egrep "^    [a-z0-9|*-]*\).*# " $0 | grep -v TODO | sed -e 's/^    /  /g ; s/)// ; s/# /\n   - /g'
+        egrep "^    [a-z0-9|*-]*\) # " $0 | grep -v TODO | sed -e 's/^    /  /g ; s/)// ; s/# /\n   - /g'
         ;;
     *) # Unrecognised options trigger marquee output with a "--help"ful hint
         do_marquee "Run \"$0 --help\" for options"
