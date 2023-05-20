@@ -434,50 +434,51 @@ do_cm5() {
     delay=0.5
     tput setaf 196  # a red
     LINES=$(tput lines)
-    blockheight=${1:-$2}  # how many lines to move together in a block
+    blockheight=${1:-1}  # how many lines to move together in a block
     totheight=$(( ((LINES-2)/blockheight)*blockheight ))
     topoffset=$(( (LINES-totheight)/2))
 
     COLUMNS=$(tput cols)
     width=$((COLUMNS/3))
-    blankline=$(for c in $(seq 1 $COLUMNS) ; do echo -n '.' ; done)
+    blankline=$(for c in $(seq 1 $width) ; do echo -n '.' ; done)
     ich1=$(tput ich 1) # let's save the output of this for future use
     arraysize=$((${#braille[@]}))
 
-    moveit="$(tput cud 1)$(tput cub $COLUMNS)$(tput cuf $(( (COLUMNS-width)/2 )))"
+    down1="$(tput cud 1)"
+    backall="$(tput cub $COLUMNS)"
+    fwdsome="$(tput cuf $(( (COLUMNS-width)/2 )))"
+    moveit="${down1}${backall}${fwdsome}"
 
     offset=0
 
     # template block
-    tblock=$(for line in $(seq 1 $blockheight) ; do
-       tmp="$blankline
-$tmp
-"
+    for line in $(seq 1 $blockheight) ; do
+       tblock="$blankline
+$tblock"
     done
-    echo "$tmp")
 
-
+#echo "b${blankline}B"
+#echo "t${tblock}T"
+#sleep 5
 
     while true ; do
-        [ "$offset" -eq 0 ] && echo -n "$rc" && do_delay
+        [ "$offset" -eq 0 ] && echo -n "$rc" && tput setaf 160 && do_delay
         case $(( ($offset/$blockheight)%2 )) in
             0)  ## even = move right
                 [ -z "${rblock[$offset]}" ] && rblock[$offset]="$tblock"
                 rblock[$offset]="$(echo "${rblock[$offset]}" | while read line ; do
-                    echo -n "${moveit}$(tput setaf 160)${braille[$((RANDOM%arraysize))]}"  # random braille char
-                    echo "${line:0:$((width-1))}x[$offset]"
-                done | head -n $blockheight)
-    "
-                echo -n "${rblock[$offset]}z"
+                    echo -n "${moveit}${braille[$((RANDOM%arraysize))]}"  # random braille char
+                    echo "${line:0:$((width))}"
+                done | head -n $blockheight)"
+                echo "r${rblock[$offset]}R${width}r$offset"
                 ;;
             1)  ## odd = move left
                 [ -z "${lblock[$offset]}" ] && lblock[$offset]="$tblock"
                 lblock[$offset]="$(echo "${lblock[$offset]}" | while read line ; do
-                   echo -n "$(tput setaf 118)${moveit}${line:1:${width-1}}"
-                    echo "${braille[$((RANDOM%arraysize))]}x[$offset]"  # random braille char
-                done | head -n $blockheight)
-    "
-                echo -n "${lblock[$offset]}z"
+                    echo -n "${moveit}${line:0:$((width))}"
+                    echo "${braille[$((RANDOM%arraysize))]}"  # random braille char
+                done | head -n $blockheight)"
+                echo "l${lblock[$offset]}L${width}l$offset"
                 ;;
         esac
         offset=$((offset+blockheight))
