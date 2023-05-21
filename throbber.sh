@@ -429,9 +429,7 @@ do_cm5() {
 # HOW:
 # each line is stored as a line of characters, then an addition is added at the appropriate end, and redraw
 
-    clear
-    tput sc
-    delay=0.5
+    delay=0.075
     tput setaf 196  # a red
     LINES=$(tput lines)
     blockheight=${1:-1}  # how many lines to move together in a block
@@ -440,8 +438,7 @@ do_cm5() {
 
     COLUMNS=$(tput cols)
     width=$((COLUMNS/3))
-    blankline=$(for c in $(seq 1 $width) ; do echo -n '.' ; done)
-    ich1=$(tput ich 1) # let's save the output of this for future use
+    blankline=$(for c in $(seq 1 $width) ; do echo -n ' ' ; done)
     arraysize=$((${#braille[@]}))
 
     down1="$(tput cud 1)"
@@ -449,42 +446,32 @@ do_cm5() {
     fwdsome="$(tput cuf $(( (COLUMNS-width)/2 )))"
     moveit="${down1}${backall}${fwdsome}"
 
-    offset=0
-
     # template block
-    for line in $(seq 1 $blockheight) ; do
-       tblock="$blankline
-$tblock"
+    for linenum in $(seq 0 $((totheight-1)) ); do
+       lineout[$linenum]="$blankline"
     done
 
-#echo "b${blankline}B"
-#echo "t${tblock}T"
-#sleep 5
+    clear
+    tput cup $topoffset $((width+1))
+    tput sc
+    tput setaf 160
 
     while true ; do
-        [ "$offset" -eq 0 ] && echo -n "$rc" && tput setaf 160 && do_delay
-        case $(( ($offset/$blockheight)%2 )) in
-            0)  ## even = move right
-                [ -z "${rblock[$offset]}" ] && rblock[$offset]="$tblock"
-                rblock[$offset]="$(echo "${rblock[$offset]}" | while read line ; do
-                    echo -n "${moveit}${braille[$((RANDOM%arraysize))]}"  # random braille char
-                    echo "${line:0:$((width))}"
-                done | head -n $blockheight)"
-                echo "r${rblock[$offset]}R${width}r$offset"
-                ;;
-            1)  ## odd = move left
-                [ -z "${lblock[$offset]}" ] && lblock[$offset]="$tblock"
-                lblock[$offset]="$(echo "${lblock[$offset]}" | while read line ; do
-                    echo -n "${moveit}${line:0:$((width))}"
-                    echo "${braille[$((RANDOM%arraysize))]}"  # random braille char
-                done | head -n $blockheight)"
-                echo "l${lblock[$offset]}L${width}l$offset"
-                ;;
-        esac
-        offset=$((offset+blockheight))
-        [ "$((offset+topoffset+blockheight))" -gt "$((LINES-1))" ] && offset=0 
+        echo -n "$rc"
+        for linenum in $( seq 0 $((totheight-1)) ) ; do
+            case $(( ($linenum/$blockheight)%2 )) in
+                0)  ## even = move right
+                    lineout[$linenum]="$(echo -n "${braille[$((RANDOM%arraysize))]}${lineout[$linenum]:0:$((width-1))}")"
+                    echo -n "${lineout[$linenum]}${moveit}"
+                    ;;
+                1)  ## odd = move left
+                    lineout[$linenum]="$(echo -n "${lineout[$linenum]:1:$((width))}${braille[$((RANDOM%arraysize))]}")" 
+                    echo -n "${lineout[$linenum]}$moveit"
+                    ;;
+            esac
+        done
+        do_delay
     done
-
 }
 
 
@@ -558,8 +545,8 @@ case $1 in
         declare -n spin=braille
         delay=0.333
         order=${2:-fwd}
-        [ $1 == "cm-5" ] && order="rnd" # override $order for cm-5 mode
-        if ( [ "$1" == "cm-5" ] || [ "$3" == "full" ] ) ; then
+        [ $1 == "cm-2" ] && order="rnd" # override $order for cm-2 mode
+        if ( [ "$1" == "cm-2" ] || [ "$3" == "full" ] ) ; then
             # honestly, this is stretching the limit of what's sensible to do in a shell script, rather than ncurses, or libcaca, etc.
             # anyway... define a block we want to fill - lineshint x charstmp
             lineshint=$(( $(tput lines)/2 )) # multiple lines - half the terminal height
@@ -569,7 +556,7 @@ case $1 in
                 charstmp=$(( $(tput cols)*3/5 ))
                 lineshint=$(( charstmp/2 ))
             fi
-            [ "$1" != "cm-5" ] && lineshint=$((lineshint/3)) && charstmp=$((charstmp*2)) # change propostions if not cm-5. TODO: make this more comprehensive like the above is
+            [ "$1" != "cm-2" ] && lineshint=$((lineshint/3)) && charstmp=$((charstmp*2)) # change propostions if not cm-5. TODO: make this more comprehensive like the above is
             tput setab 16 # set a black background
             tput cup 0 0 # move to top of the screen
             tput ed # clear screen (I mean, "erase display" I guess?)
@@ -577,7 +564,7 @@ case $1 in
             tput cud $(( ($(tput lines)-lineshint)/2 )) # calculated start row
             tput cuf $(( ($(tput cols)/2)-$((charstmp/2)) )) # start column
             # colours. 178 seems yellow bulb colour (PDP-12). 196 for red LED (Connection Machine). 166 for amber terminal. 40 for green terminal 
-            [ $1 == "cm-5" ] && colcode=196 || colcode=178 # default to 178, go 196 only for the connection machine mode
+            [ $1 == "cm-2" ] && colcode=196 || colcode=178 # default to 178, go 196 only for the connection machine mode
             tput setaf $colcode 
             chars=$((charstmp*lineshint)) # chars is per-line chars * lines
             positionhint="centered" # for the do_stepchar function
@@ -590,7 +577,8 @@ case $1 in
         ;;
     cm-5) # a pretty CM-5 visualisation # $2 specifies how many lines to move together (default 1)
         exithint=fromfull
-        do_cm5 $2
+        linestogether=${2:-1}
+        do_cm5 $linestogether
         ;;
     gravity1dot) # MS/Win style: speeds up going down, slows at top. 1dot version
         declare -n spin=b1gravity
@@ -791,7 +779,7 @@ If \"ALARM\" is given as ARG1 then the delay is controlled by external SIGALRM
 #        egrep "^    [a-z0-9|-]*\).*# " $0 | sed -e 's/)//' | column -t -s'#'
         egrep "^    [a-z0-9|*-]*\) # " $0 | grep -v TODO | sed -e 's/^    /  /g ; s/)// ; s/# /\n   - /g'
         ;;
-    *) # Unrecognised options trigger marquee output with a "--help"ful hint
+    *) # Unrecognised options triggers marquee output with a "--help"ful hint
         do_marquee "Run \"$0 --help\" for options"
         ;;
 esac
