@@ -556,7 +556,7 @@ case $1 in
                 charstmp=$(( $(tput cols)*3/5 ))
                 lineshint=$(( charstmp/2 ))
             fi
-            [ "$1" != "cm-2" ] && lineshint=$((lineshint/3)) && charstmp=$((charstmp*2)) # change propostions if not cm-5. TODO: make this more comprehensive like the above is
+            [ "$1" != "cm-2" ] && lineshint=$((lineshint/3)) && charstmp=$((charstmp*2)) # change propostions if not cm-2. TODO: make this more comprehensive like the above is
             tput setab 16 # set a black background
             tput cup 0 0 # move to top of the screen
             tput ed # clear screen (I mean, "erase display" I guess?)
