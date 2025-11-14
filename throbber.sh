@@ -541,7 +541,7 @@ case $1 in
         # note: have to plan the whole game?
         true
         ;;
-    braille|cm-2) # Step through all braille dot patterns in unicode order # $2 = "rev" to reverse, "rnd" to randomise. Anything else = default order # $3 = "full" for a fullscreen mode # "cm-2" is a shortcut to "rnd full" and additionally turns it red
+    braille|cm-2) # Step through all braille dot patterns in unicode order # $2 = "rev" to reverse, "rnd" to randomise. Anything else = default order # $3 = "full" for a fullscreen mode # "cm-2" is similar to "rnd full" additionally turns it red
         declare -n spin=braille
         delay=0.333
         order=${2:-fwd}
@@ -556,13 +556,13 @@ case $1 in
                 charstmp=$(( $(tput cols)*3/5 ))
                 lineshint=$(( charstmp/2 ))
             fi
-            [ "$1" != "cm-2" ] && lineshint=$((lineshint/3)) && charstmp=$((charstmp*2)) # change propostions if not cm-2. TODO: make this more comprehensive like the above is
+            [ "$1" != "cm-2" ] && lineshint=$((lineshint/3)) && charstmp=$((charstmp*2)) # change proportions if not cm-2. TODO: make this more comprehensive like the above is
             tput setab 16 # set a black background
             tput cup 0 0 # move to top of the screen
             tput ed # clear screen (I mean, "erase display" I guess?)
             # starting position is calculated to give a centered square
             tput cud $(( ($(tput lines)-lineshint)/2 )) # calculated start row
-            tput cuf $(( ($(tput cols)/2)-$((charstmp/2)) )) # start column
+            tput cuf $(( ($(tput cols)/2)-$((charstmp/2)) )) # start column # TODO: this is buggy on terminals of 42 lines or more. This whole process needs rethinking
             # colours. 178 seems yellow bulb colour (PDP-12). 196 for red LED (Connection Machine). 166 for amber terminal. 40 for green terminal 
             [ $1 == "cm-2" ] && colcode=196 || colcode=178 # default to 178, go 196 only for the connection machine mode
             tput setaf $colcode 
