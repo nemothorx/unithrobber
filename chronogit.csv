@@ -1,0 +1,38 @@
+_raw/README.md_2023-04-30T23:34:04 README.md statement of intent
+
+_raw/throbber.sh_2023-05-01T00:58:56 throbber.sh basic implementation of 9 toys, 4 TODOs\\n\\nToys:\\n - cross\\n - marquee\\n - spin\\n - movingblock\\n - braillespin\\n - braillerace\\n - braile2race\\n - braillesnake (todo)\\n - kitt (todo)\\n - dot (todo)\\n - tunnel (todo)\\n - asciiprop\\n - uniprop
+
+_raw/throbber.sh_2023-05-02T00:20:33 throbber.sh added notes on braillesnake and kitt, added new toy todo: gravityspin
+
+_raw/throbber.sh_2023-05-03T02:50:10 throbber.sh better array coding, add toys\\n\\n - borderspin (renamed from spin)\\n - kitt = implemented\\n - scanner\\n - dancer\\n - tally\\n - countdown
+
+_raw/throbber.sh_2023-05-04T01:16:14 throbber.sh added some braille based toys\\n\\n - gravity1dot (renamed from gravityspin)\\n - gravity2dot\\n - gravity3dot\\n - gravity3dotwide
+
+_raw/unicode-tally-rant.md_2023-05-04T23:26:37 unicode-tally-rant.md 
+_raw/README.md_2023-05-04T23:32:43 README.md slighly improved readme. Added unicode tally rant
+_raw/throbber.sh_2023-05-05T02:14:06 throbber.sh do_stepchar replaces do_spin, added toys\\n\\n - worm\\n - clockslow\\n - clockfast\\n - moon\\n - asciiprop and uniprop merged along with various "wiggle" toys
+
+_raw/throbber.sh_2023-05-05T11:38:55 throbber.sh minor tweaks 
+
+_raw/throbber.sh_2023-05-07T01:29:03 throbber.sh more tweaks
+
+_raw/README.md_2023-05-10T02:45:58 README.md 
+_raw/throbber.sh_2023-05-10T03:16:42 throbber.sh ALRM signal handler for external clock
+
+_raw/throbber.sh_2023-05-11T02:20:18 throbber.sh adding toy: braille
+
+_raw/throbber.sh_2023-05-12T00:51:49 throbber.sh added toy: cm-5 (variant on braille toy)
+
+_raw/throbber.sh_2023-05-16T01:33:34 throbber.sh tweak cm-5 
+
+_raw/throbber.sh_2023-05-18T00:19:28 throbber.sh toy rename: cm-5 shoulda been cm-2 all along. oops
+
+_raw/throbber.sh_2023-05-19T00:36:41 throbber.sh added toy: dice (submodes: rnd, tally and default)
+
+_raw/throbber.sh_2023-05-20T04:10:10 throbber.sh add toy: cm-5 (properly this time). Added tally and cm5 functions
+
+_raw/throbber.sh_2023-05-20T20:26:50 throbber.sh tweaks
+
+_raw/throbber.sh_2023-05-22T02:42:44 throbber.sh finish fixing the cm-5 to cm-2 rename. tweak do_cm5 function
+
+_raw/throbber.sh_2023-07-01 throbber.sh fix a cm-5 -to- cm-2 in commentsa
